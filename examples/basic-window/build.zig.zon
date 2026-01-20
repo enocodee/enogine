@@ -1,0 +1,10 @@
+.{
+    .name = .enogine,
+    .version = "0.15.1",
+    .dependencies = .{
+        .eno = .{ .path = "../.." },
+    },
+    .paths = .{""},
+    .fingerprint = 0x4a2fde615bab1560,
+}
+

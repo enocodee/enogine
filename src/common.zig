@@ -9,6 +9,7 @@ const rectangle = @import("common/components/rectangle.zig");
 const circle = @import("common/components/circle.zig");
 
 pub const raylib = @import("raylib");
+pub const raygui = @import("raygui");
 
 pub const schedule = @import("common/schedule.zig");
 pub const schedules = schedule.schedules;

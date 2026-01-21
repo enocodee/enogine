@@ -35,6 +35,10 @@ pub const TextBundle = Text.Bundle;
 pub const Font = rl.Font;
 pub const Color = rl.Color;
 
+pub fn loadFont(filename: [:0]const u8) !Font {
+    return rl.loadFont(filename);
+}
+
 /// * Add the main scheduling.
 /// * Add the render scheduling.
 /// * Extract & render systems for common components

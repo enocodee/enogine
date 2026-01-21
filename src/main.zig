@@ -15,6 +15,10 @@ pub const window = struct {
         rl.closeWindow();
     }
 
+    pub fn shouldClose() bool {
+        return rl.windowShouldClose();
+    }
+
     pub fn screenWidth() u32 {
         return @intCast(rl.getScreenWidth());
     }

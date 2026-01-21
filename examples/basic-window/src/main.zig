@@ -10,6 +10,10 @@ fn spawn(w: *World) !void {
     }});
 }
 
+pub fn closeWindow(w: *World) !void {
+    if (eno.window.shouldClose()) w.should_exit = true;
+}
+
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}).init;
     defer if (gpa.deinit() == .leak) {
@@ -25,5 +29,6 @@ pub fn main() !void {
     _ = try world
         .addModules(&.{eno.common.CommonModule}) // this is important
         .addSystem(.system, eno.common.schedules.startup, spawn)
+        .addSystem(.system, eno.common.schedules.update, closeWindow)
         .run();
 }

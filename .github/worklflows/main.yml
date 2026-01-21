@@ -1,0 +1,30 @@
+on: 
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Raylib dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+               xorg-dev \
+               libgl1-mesa-dev \
+               libglu1-mesa-dev \
+               libasound2-dev \
+               xvfb
+
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: setup zig
+        uses: mlugg/setup-zig@v2.0.5
+        with: 
+          version: 0.15.1
+
+      - name: run test
+        run: |
+          zig build test --summary all

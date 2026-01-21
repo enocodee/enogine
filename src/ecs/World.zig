@@ -196,7 +196,8 @@ pub const GetResourceError = error{
     /// `T` resource not found.
     ValueNotFound,
 };
-pub fn getResource(self: World, comptime T: type) !T {
+
+pub fn getResource(self: *const World, comptime T: type) !T {
     return (try ErasedResourceType.cast(self, T)).*;
 }
 
@@ -312,7 +313,7 @@ pub fn getComponent(
 }
 
 pub fn getMutComponent(
-    self: World,
+    self: *const World,
     entity_id: Entity.ID,
     comptime T: type,
 ) !*T {
@@ -498,7 +499,7 @@ pub fn run(self: *World) !void {
 }
 
 pub fn query(
-    self: World,
+    self: *const World,
     comptime types: []const type,
 ) !_query.Query(types) {
     var query_executor: _query.Query(types) = .{};
@@ -533,7 +534,7 @@ test "query" {
         Position{ .x = 1, .y = 2 },
     });
 
-    const queries = (try query(w, &.{ Position, *Velocity })).many();
+    const queries = (try query(&w, &.{ Position, *Velocity })).many();
 
     try std.testing.expect(queries.len == 2);
 
@@ -553,13 +554,13 @@ test "query" {
     vec_1.*.x += 1; // changes value
 
     // get again to see if the value was changed
-    const queries2 = (try query(w, &.{ Position, Velocity })).many();
+    const queries2 = (try query(&w, &.{ Position, Velocity })).many();
 
     const pos_2: Position, const vec_2: Velocity = queries2[1];
     try std.testing.expect(pos_2.x == 1);
     try std.testing.expect(vec_2.x == 2);
 
-    const player_queries = (try query(w, &.{ Player, *Position })).many();
+    const player_queries = (try query(&w, &.{ Player, *Position })).many();
     try std.testing.expectEqual(1, player_queries.len);
 
     const player, const player_pos = player_queries[0];
@@ -567,7 +568,7 @@ test "query" {
     try std.testing.expectEqualSlices(u8, "test_player", player.name);
     try std.testing.expectEqual(player_pos.x, 2);
 
-    const monster_queries = (try query(w, &.{ Monster, Position })).many();
+    const monster_queries = (try query(&w, &.{ Monster, Position })).many();
     try std.testing.expectEqual(2, monster_queries.len);
 
     const monster1, _ = monster_queries[0];

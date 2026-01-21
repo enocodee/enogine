@@ -7,9 +7,6 @@ pub const Entity = @import("ecs/Entity.zig");
 
 pub const utils = @import("ecs/utils.zig");
 
-pub const common = @import("common.zig");
-pub const CommonModule = common.CommonModule;
-
 pub const schedule = struct {
     pub const Label = @import("ecs/schedule/label.zig").Label;
     pub const Graph = @import("ecs/schedule/Graph.zig");

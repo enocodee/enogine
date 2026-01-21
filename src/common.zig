@@ -8,6 +8,9 @@ const grid = @import("common/components/grid/mod.zig");
 const rectangle = @import("common/components/rectangle.zig");
 const circle = @import("common/components/circle.zig");
 
+pub const raylib = @import("raylib");
+pub const raygui = @import("raygui");
+
 pub const schedule = @import("common/schedule.zig");
 pub const schedules = schedule.schedules;
 
@@ -30,6 +33,8 @@ pub const InGrid = grid.InGrid;
 pub const Position = position.Position;
 pub const Text = @import("common/components/Text.zig");
 pub const TextBundle = Text.Bundle;
+
+// TODO: remove all api from raylib
 
 /// * Add the main scheduling.
 /// * Add the render scheduling.

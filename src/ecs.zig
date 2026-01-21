@@ -34,6 +34,8 @@ pub const system = struct {
     pub const System = _system.System;
 };
 
+pub const hierarchy = @import("ecs/hierarchy.zig");
+
 test {
     @import("std").testing.refAllDeclsRecursive(@This());
 }

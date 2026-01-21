@@ -1,5 +1,6 @@
 //! Include all common components and some useful systems
 const ecs = @import("ecs.zig");
+const rl = @import("raylib");
 const ui = @import("main.zig").ui;
 
 const position = @import("common/components/position.zig");
@@ -30,6 +31,9 @@ pub const InGrid = grid.InGrid;
 pub const Position = position.Position;
 pub const Text = @import("common/components/Text.zig");
 pub const TextBundle = Text.Bundle;
+
+pub const Font = rl.Font;
+pub const Color = rl.Color;
 
 /// * Add the main scheduling.
 /// * Add the render scheduling.

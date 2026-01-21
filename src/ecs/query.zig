@@ -148,13 +148,17 @@ pub fn Query(comptime types: []const type) type {
             var final_list: std.ArrayList(EntityID) = .empty;
 
             inline for (exclude_types) |T| {
-                // use label to control flow in comptime
-                const Type = ecs_util.Deref(T);
-                const s = try ErasedComponentStorage.cast(w, Type);
+                const s = ErasedComponentStorage.cast(w, T);
 
-                var data_iter = s.data.keyIterator();
-                while (data_iter.next()) |it| {
-                    try exclude_list.put(it.*, it.*);
+                // NOTE: avoid silently returning error because the loop has been unrolled
+                if (s) |storage| {
+                    var data_iter = storage.data.keyIterator();
+                    while (data_iter.next()) |it| {
+                        try exclude_list.put(it.*, it.*);
+                    }
+                } else |err| switch (err) {
+                    World.GetComponentError.StorageNotFound => {},
+                    else => return err,
                 }
             }
 
@@ -164,18 +168,25 @@ pub fn Query(comptime types: []const type) type {
                     // skip the min_storage because its available
                     // in the result list
                     if (i == min_storage.idx) break :skip_min;
+                    const s = ErasedComponentStorage.cast(w, T);
 
-                    const Type = ecs_util.Deref(T);
-                    const s = try ErasedComponentStorage.cast(w, Type);
+                    // NOTE: avoid silently returning error because the loop has been unrolled
+                    if (s) |storage| {
+                        var data_iter = storage.data.keyIterator();
+                        while (data_iter.next()) |it| {
+                            try temp_list.append(alloc, it.*);
+                        }
+                        try query_util.findIdentical(alloc, &query_list, temp_list);
 
-                    var data_iter = s.data.keyIterator();
-                    while (data_iter.next()) |it| {
-                        try temp_list.append(alloc, it.*);
+                        // reset l1
+                        temp_list.clearAndFree(alloc);
+                    } else |err| switch (err) {
+                        World.GetComponentError.StorageNotFound => {
+                            std.log.err("the storage of {s} component not found", .{@typeName(ecs_util.Deref(T))});
+                            return err;
+                        },
+                        else => return err,
                     }
-                    try query_util.findIdentical(alloc, &query_list, temp_list);
-
-                    // reset l1
-                    temp_list.clearAndFree(alloc);
                 }
             }
 

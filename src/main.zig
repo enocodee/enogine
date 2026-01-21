@@ -29,5 +29,7 @@ pub const window = struct {
 };
 
 test {
-    @import("std").testing.refAllDeclsRecursive(@This());
+    _ = ecs;
+    _ = common;
+    _ = ui;
 }

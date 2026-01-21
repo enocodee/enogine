@@ -6,7 +6,7 @@ const World = eno.ecs.World;
 fn spawn(w: *World) !void {
     _ = w.spawnEntity(.{eno.common.TextBundle{
         .pos = .{ .x = 0, .y = 0 },
-        .text = try .initWithDefaultFont(.{ .str = "hehe" }, .black),
+        .text = try .initWithDefaultFont(.{ .str = "hehe" }, .black, 20),
     }});
 }
 

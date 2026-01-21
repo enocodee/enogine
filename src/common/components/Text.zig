@@ -6,6 +6,7 @@ const Position = @import("position.zig").Position;
 const Text = @This();
 
 font: rl.Font,
+size: f32,
 content: Content,
 color: rl.Color,
 
@@ -27,11 +28,12 @@ pub const Bundle = struct {
 
 /// See `initWithDefaultFont` to initialize the instace with
 /// default font from raylib.
-pub fn init(font: rl.Font, content: Content, color: rl.Color) Text {
+pub fn init(font: rl.Font, content: Content, color: rl.Color, size: f32) Text {
     return .{
         .font = font,
         .content = content,
         .color = color,
+        .size = size,
     };
 }
 
@@ -45,11 +47,12 @@ pub fn deinit(
     }
 }
 
-pub fn initWithDefaultFont(content: Content, color: rl.Color) !Text {
+pub fn initWithDefaultFont(content: Content, color: rl.Color, size: f32) !Text {
     return .{
         .content = content,
         .font = try rl.getFontDefault(),
         .color = color,
+        .size = size,
     };
 }
 
@@ -61,8 +64,8 @@ pub fn render(queries: QueryToRender(&.{ Text, Position })) !void {
             text.font,
             text.content.value(),
             .{ .x = @floatFromInt(pos.x), .y = @floatFromInt(pos.y) },
-            @floatFromInt(text.font.baseSize - 9),
-            0,
+            text.size,
+            1,
             text.color,
         );
     }

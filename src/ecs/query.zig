@@ -148,7 +148,6 @@ pub fn Query(comptime types: []const type) type {
             var final_list: std.ArrayList(EntityID) = .empty;
 
             inline for (exclude_types) |T| {
-                std.log.debug("exclude {s}", .{@typeName(T)});
                 // use label to control flow in comptime
                 const Type = ecs_util.Deref(T);
                 const s = try ErasedComponentStorage.cast(w, Type);

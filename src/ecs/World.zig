@@ -18,7 +18,6 @@ const ecs_common = @import("../common.zig");
 const _query = @import("query.zig");
 const _system = @import("system.zig");
 const schedule = @import("schedule.zig");
-const scheds = schedule.schedules;
 
 const ErasedComponentStorage = component.ErasedStorage;
 const ComponentStorage = component.Storage;

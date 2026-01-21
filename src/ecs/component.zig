@@ -26,7 +26,7 @@ pub const ErasedStorage = struct {
     ptr: *anyopaque,
     deinit_fn: *const fn (*const World, std.mem.Allocator) void,
 
-    pub inline fn cast(w: *const World, comptime T: type) !*Storage(T) {
+    pub inline fn cast(w: *const World, comptime T: type) !*Storage(ecs_util.Deref(T)) {
         const Type = ecs_util.Deref(T);
         const hash = std.hash_map.hashString(@typeName(Type));
         const s = w.component_storages.get(hash) orelse

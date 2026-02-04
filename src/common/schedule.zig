@@ -46,16 +46,28 @@ const MainScheduleOrder = struct {
     is_run_once: bool = false,
 };
 
-fn render(w: *World) !void {
-    rl.beginDrawing();
-    defer {
-        rl.clearBackground(.white);
-        rl.endDrawing();
-    }
+const RenderScheduleOrder = struct {
+    /// Run multiple times
+    labels: []const Label = &[_]Label{
+        schedules.startup,
+        schedules.update,
+        schedules.deinit,
+    },
+};
 
-    try w
-        .render_scheduler
-        .runSchedule(w.alloc, w, schedules.update);
+fn render(
+    w: *World,
+    orders_res: Resource(*RenderScheduleOrder),
+) !void {
+    const orders = orders_res.result;
+
+    rl.beginDrawing();
+    rl.clearBackground(.white);
+    defer rl.endDrawing();
+
+    for (orders.labels) |label| {
+        try w.render_scheduler.runSchedule(w.alloc, w, label);
+    }
 }
 
 fn run(w: *World, orders_res: Resource(*MainScheduleOrder)) !void {
@@ -80,7 +92,10 @@ fn endFrame(w: *World) !void {
 pub const render_schedule_mod = struct {
     pub fn build(w: *World) void {
         _ = w
+            .addSchedule(.render, schedules.startup)
             .addSchedule(.render, schedules.update)
+            .addSchedule(.render, schedules.deinit)
+            .addResource(RenderScheduleOrder, .{})
             .configureSet(
                 .render,
                 schedules.update,

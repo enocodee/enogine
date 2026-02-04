@@ -47,7 +47,10 @@ pub const CommonModule = struct {
                 schedule.main_schedule_mod,
                 schedule.render_schedule_mod,
             })
-            .addModules(&.{ui})
+            .addModules(&.{
+                ui,
+                @import("camera.zig").CameraModule,
+            })
             .addSystemsWithConfig(.render, schedules.update, .{
             rectangle.render,
             grid.render,

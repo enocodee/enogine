@@ -1,6 +1,7 @@
 const build_config = @import("build_config");
 
 pub const ecs = @import("ecs.zig");
+pub const camera = @import("camera.zig");
 pub const common = if (build_config.common) @import("common.zig") else struct {};
 pub const ui = if (build_config.ui) @import("ui.zig") else struct {};
 

@@ -1,21 +1,9 @@
-//! This module exports all thing related to scheduling in `ecs`.
-//!
-//! Exported:
-//! * Label
-//! * Graph
-//! * Scheduler
-//! * schedules
-//! * main_schedule_mod (used in `CommonModule`):
-//! * render_schedule_mod (used in `CommonModule`):
-const rl = @import("raylib");
+//! Main scheduling of the application that will be run
+//! by `World.system_scheduler`
 const ecs = @import("../ecs.zig");
-const common = @import("../common.zig");
 
 const Resource = ecs.query.Resource;
 const World = ecs.World;
-
-const UiRenderSet = @import("../ui.zig").UiRenderSet;
-const RenderSet = common.RenderSet;
 
 pub const Label = ecs.schedule.Label;
 pub const Graph = ecs.schedule.Graph;
@@ -46,30 +34,6 @@ const MainScheduleOrder = struct {
     is_run_once: bool = false,
 };
 
-const RenderScheduleOrder = struct {
-    /// Run multiple times
-    labels: []const Label = &[_]Label{
-        schedules.startup,
-        schedules.update,
-        schedules.deinit,
-    },
-};
-
-fn render(
-    w: *World,
-    orders_res: Resource(*RenderScheduleOrder),
-) !void {
-    const orders = orders_res.result;
-
-    rl.beginDrawing();
-    rl.clearBackground(.white);
-    defer rl.endDrawing();
-
-    for (orders.labels) |label| {
-        try w.render_scheduler.runSchedule(w.alloc, w, label);
-    }
-}
-
 fn run(w: *World, orders_res: Resource(*MainScheduleOrder)) !void {
     const orders = orders_res.result;
     if (!orders.is_run_once) {
@@ -88,23 +52,6 @@ fn endFrame(w: *World) !void {
     // reset the short-lived allocator
     _ = w.arena.reset(.free_all);
 }
-
-pub const render_schedule_mod = struct {
-    pub fn build(w: *World) void {
-        _ = w
-            .addSchedule(.render, schedules.startup)
-            .addSchedule(.render, schedules.update)
-            .addSchedule(.render, schedules.deinit)
-            .addResource(RenderScheduleOrder, .{})
-            .configureSet(
-                .render,
-                schedules.update,
-                UiRenderSet,
-                .{ .after = &.{RenderSet} },
-            )
-            .addSystem(.render, Scheduler.entry, render);
-    }
-};
 
 /// A standard schedule pre-defined in the application.
 /// # Orders:

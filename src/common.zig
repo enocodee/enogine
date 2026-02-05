@@ -1,5 +1,4 @@
 //! Include all common components and some useful systems
-const ecs = @import("ecs.zig");
 const ui = @import("main.zig").ui;
 
 const position = @import("common/components/position.zig");
@@ -14,13 +13,7 @@ pub const raygui = @import("raygui");
 pub const schedule = @import("common/schedule.zig");
 pub const schedules = schedule.schedules;
 
-const Set = ecs.system.Set;
 const World = @import("ecs.zig").World;
-
-/// Set of all non-UI components
-///
-/// See `ui.UiRenderSet` for UI components
-pub const RenderSet = Set{ .name = "render" };
 
 // Shape components
 pub const Rectangle = rectangle.Rectangle;
@@ -45,7 +38,7 @@ pub const CommonModule = struct {
         _ = w
             .addModules(&.{
                 schedule.main_schedule_mod,
-                schedule.render_schedule_mod,
+                @import("render.zig").schedule_mod,
             })
             .addModules(&.{
                 ui,
@@ -56,6 +49,6 @@ pub const CommonModule = struct {
             grid.render,
             circle.render,
             Text.render,
-        }, .{ .in_sets = &.{RenderSet} });
+        }, .{ .in_sets = &.{@import("render.zig").RenderSet} });
     }
 };

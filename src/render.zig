@@ -3,7 +3,6 @@
 //! - Schedules: `startup`, `update`, `deinit` (see `RenderScheduleOrder` for the order)
 //!
 //! TODO: ordered rendering by depth values (2d-only)
-
 const ecs = @import("ecs.zig");
 const rl = @import("raylib");
 
@@ -37,6 +36,15 @@ const RenderScheduleOrder = struct {
         schedules.deinit,
     },
 };
+
+// TODO: each render system will add component tuples to
+//       the queue.
+// pub const RenderItem = struct {
+//     render_fn: *anyopaque,
+//     depth: i32,
+// };
+// pub fn compareRI(ctx: void, a: RenderItem, b: RenderItem) std.math.Order {}
+// pub const RenderQueue = std.PriorityQueue(RenderItem, void, compareRI);
 
 fn render(
     w: *World,

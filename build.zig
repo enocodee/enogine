@@ -23,15 +23,19 @@ pub fn build(b: *std.Build) !void {
     const raygui = raylib_dep.module("raygui");
     const raylib_artifact = raylib_dep.artifact("raylib");
 
+    const common_imports: []const std.Build.Module.Import = &.{
+        .{ .name = "build_config", .module = build_opts.createModule() },
+        .{ .name = "raylib", .module = raylib },
+        .{ .name = "raygui", .module = raygui },
+    };
+
+    buildCheck(b, t, o, common_imports);
+
     const eno = b.addModule("eno", .{
         .root_source_file = b.path("src/main.zig"),
         .target = t,
         .optimize = o,
-        .imports = &.{
-            .{ .name = "build_config", .module = build_opts.createModule() },
-            .{ .name = "raylib", .module = raylib },
-            .{ .name = "raygui", .module = raygui },
-        },
+        .imports = common_imports,
     });
     eno.linkLibrary(raylib_artifact);
 
@@ -41,6 +45,7 @@ pub fn build(b: *std.Build) !void {
                 .root_source_file = b.path("src/main.zig"),
                 .target = t,
                 .optimize = o,
+                .imports = common_imports,
             }),
             .test_runner = .{
                 .mode = .simple,
@@ -50,10 +55,27 @@ pub fn build(b: *std.Build) !void {
         const run_test_step = b.step("test", "Run unit tests");
         const run_test = b.addRunArtifact(test_exe);
         test_exe.linkLibrary(raylib_artifact);
-        test_exe.root_module.addImport("raylib", raylib);
-        test_exe.root_module.addImport("raygui", raygui);
-        test_exe.root_module.addImport("build_config", build_opts.createModule());
-
         run_test_step.dependOn(&run_test.step);
     }
+}
+
+fn buildCheck(
+    b: *std.Build,
+    t: std.Build.ResolvedTarget,
+    o: std.builtin.OptimizeMode,
+    imports: []const std.Build.Module.Import,
+) void {
+    const lib = b.addLibrary(.{
+        .name = "enogine_check",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/main.zig"),
+            .target = t,
+            .optimize = o,
+            .imports = imports,
+        }),
+    });
+    b.installArtifact(lib);
+
+    const run_step = b.step("check", "Check the source (should be run by ZLS)");
+    run_step.dependOn(&lib.step);
 }

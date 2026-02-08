@@ -10,7 +10,7 @@ fn closeWindow(w: *World) !void {
     if (eno.window.shouldClose()) w.should_exit = true;
 }
 
-fn drawFPS() void {
+fn drawFPS() !void {
     eno.common.raylib.drawFPS(0, 0);
 }
 
@@ -32,6 +32,6 @@ pub fn main() !void {
             player,
             map,
         })
-        .addSystem(.system, eno.common.schedules.update, closeWindow)
+        .addSystems(.system, eno.common.schedules.update, &.{ closeWindow, drawFPS })
         .run();
 }

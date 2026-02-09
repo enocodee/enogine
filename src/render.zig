@@ -43,8 +43,6 @@ const RenderScheduleOrder = struct {
     },
 };
 
-// TODO: each render system will add component tuples to
-//       the queue.
 pub const RenderItem = struct {
     render_fn: *const fn (*World, ecs.Entity.ID) anyerror!void,
     entity_id: ecs.Entity.ID,

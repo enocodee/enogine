@@ -1,35 +1,24 @@
-const rl = @import("raylib");
 const ecs = @import("../../ecs.zig");
-
-const World = ecs.World;
+const rl = @import("raylib");
 const RenderQueue = @import("../../render.zig").RenderQueue;
+const World = ecs.World;
 const Resource = ecs.query.Resource;
 const Transform = @import("transform.zig").Transform;
 const QueryToRender = @import("../utils.zig").QueryToRender;
 
-pub const Rectangle = struct {
-    width: i32,
-    height: i32,
-    color: rl.Color,
-};
+pub const Texture2D = rl.Texture2D;
 
-pub fn render(w: *World, e_id: ecs.Entity.ID) !void {
-    const rec, const _transform =
+fn render(w: *World, e_id: ecs.Entity.ID) !void {
+    const texture, const transform =
         try w
             .entity(e_id)
-            .getComponents(&.{ Rectangle, Transform });
+            .getComponents(&.{ Texture2D, Transform });
 
-    rl.drawRectangle(
-        _transform.x,
-        _transform.y,
-        rec.width,
-        rec.height,
-        rec.color,
-    );
+    rl.drawTexture(texture, transform.x, transform.y, .white);
 }
 
 pub fn addRenderToQueue(
-    queries: QueryToRender(&.{ Transform, ecs.Entity.ID, Rectangle }),
+    queries: QueryToRender(&.{ Transform, ecs.Entity.ID, Texture2D }),
     render_queue: Resource(*RenderQueue),
 ) !void {
     for (queries.many()) |query| {

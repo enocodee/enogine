@@ -1,8 +1,8 @@
 //! Include all common components and some useful systems
-const ecs = @import("ecs.zig");
+const render = @import("render.zig");
 const ui = @import("main.zig").ui;
 
-const position = @import("common/components/position.zig");
+const transform = @import("common/components/transform.zig");
 const grid = @import("common/components/grid/mod.zig");
 
 const rectangle = @import("common/components/rectangle.zig");
@@ -14,13 +14,9 @@ pub const raygui = @import("raygui");
 pub const schedule = @import("common/schedule.zig");
 pub const schedules = schedule.schedules;
 
-const Set = ecs.system.Set;
-const World = @import("ecs.zig").World;
+pub const render_schedules = render.schedules;
 
-/// Set of all non-UI components
-///
-/// See `ui.UiRenderSet` for UI components
-pub const RenderSet = Set{ .name = "render" };
+const World = @import("ecs.zig").World;
 
 // Shape components
 pub const Rectangle = rectangle.Rectangle;
@@ -30,9 +26,13 @@ pub const CircleBundle = circle.Bundle;
 // Other components
 pub const Grid = grid.Grid;
 pub const InGrid = grid.InGrid;
-pub const Position = position.Position;
+pub const Transform = transform.Transform;
 pub const Text = @import("common/components/Text.zig");
 pub const TextBundle = Text.Bundle;
+
+// Texture
+const texture2d = @import("common/components/texture2d.zig");
+pub const Texture2D = texture2d.Texture2D;
 
 // TODO: remove all api from raylib
 
@@ -45,17 +45,23 @@ pub const CommonModule = struct {
         _ = w
             .addModules(&.{
                 schedule.main_schedule_mod,
-                schedule.render_schedule_mod,
+                render.schedule_mod,
             })
             .addModules(&.{
                 ui,
                 @import("camera.zig").CameraModule,
             })
-            .addSystemsWithConfig(.render, schedules.update, .{
-            rectangle.render,
-            grid.render,
-            circle.render,
-            Text.render,
-        }, .{ .in_sets = &.{RenderSet} });
+            .addSystemsWithConfig(
+            .render,
+            render_schedules.update,
+            .{ // TODO: Automate the process of adding items to queue
+                grid.render,
+                rectangle.addRenderToQueue,
+                circle.addRenderToQueue,
+                texture2d.addRenderToQueue,
+                Text.addRenderToQueue,
+            },
+            .{ .in_sets = &.{render.RenderSet} },
+        );
     }
 };

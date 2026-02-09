@@ -3,10 +3,7 @@ const ecs = @import("ecs.zig");
 const scheds = @import("common.zig").schedule.schedules;
 
 const World = ecs.World;
-const Set = ecs.system.Set;
 const QueryUiToRender = @import("ui/utils.zig").QueryUiToRender;
-
-pub const UiRenderSet = Set{ .name = "ui_render" };
 
 pub const components = struct {
     /// NOTE: rectangle style only now
@@ -61,6 +58,6 @@ pub fn build(w: *World) void {
         .render,
         scheds.update,
         render,
-        .{ .in_sets = &.{UiRenderSet} },
+        .{ .in_sets = &.{@import("render.zig").UiRenderSet} },
     );
 }

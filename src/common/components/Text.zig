@@ -1,7 +1,11 @@
 const rl = @import("raylib");
 
+const ecs = @import("../../ecs.zig");
+const World = ecs.World;
+const Resource = ecs.query.Resource;
+const RenderQueue = @import("../../render.zig").RenderQueue;
 const QueryToRender = @import("../utils.zig").QueryToRender;
-const Position = @import("position.zig").Position;
+const Transform = @import("transform.zig").Transform;
 
 const Text = @This();
 
@@ -23,7 +27,7 @@ pub const Content = union(enum) {
 
 pub const Bundle = struct {
     text: Text,
-    pos: Position,
+    transform: Transform,
 };
 
 /// See `initWithDefaultFont` to initialize the instace with
@@ -56,17 +60,40 @@ pub fn initWithDefaultFont(content: Content, color: rl.Color, size: f32) !Text {
     };
 }
 
-pub fn render(queries: QueryToRender(&.{ Text, Position })) !void {
-    for (queries.many()) |query| {
-        const text, const pos = query;
+pub fn render(w: *World, e_id: ecs.Entity.ID) !void {
+    const text, const _transform =
+        try w
+            .entity(e_id)
+            .getComponents(&.{ Text, Transform });
 
-        rl.drawTextEx(
-            text.font,
-            text.content.value(),
-            .{ .x = @floatFromInt(pos.x), .y = @floatFromInt(pos.y) },
-            text.size,
-            1,
-            text.color,
-        );
+    rl.drawTextEx(
+        text.font,
+        text.content.value(),
+        .{
+            .x = @floatFromInt(_transform.x),
+            .y = @floatFromInt(_transform.y),
+        },
+        text.size,
+        1,
+        text.color,
+    );
+}
+
+pub fn addRenderToQueue(
+    queries: QueryToRender(&.{
+        Transform,
+        ecs.Entity.ID,
+        ecs.query.With(&.{Text}),
+    }),
+    render_queue: Resource(*RenderQueue),
+) !void {
+    for (queries.many()) |query| {
+        const transform, const entity_id = query;
+
+        try render_queue.result.add(.{
+            .render_fn = render,
+            .entity_id = entity_id,
+            .depth = transform.z,
+        });
     }
 }

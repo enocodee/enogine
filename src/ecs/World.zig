@@ -183,8 +183,14 @@ pub fn setResource(self: *World, comptime T: type, value: T) void {
         .deinit_fn = struct {
             pub fn deinit(w: *const World, alloc: std.mem.Allocator) void {
                 const ptr = ErasedResourceType.cast(w, T) catch unreachable;
+
                 if (std.meta.hasFn(T, "deinit")) {
-                    ptr.deinit(alloc);
+                    const arg_fields = std.meta.fields(std.meta.ArgsTuple(@TypeOf(T.deinit)));
+                    if (arg_fields.len > 1) {
+                        ptr.deinit(alloc);
+                    } else {
+                        ptr.deinit();
+                    }
                 }
                 alloc.destroy(ptr);
             }

@@ -51,6 +51,8 @@ pub fn Query(comptime types: []const type) type {
             if (query_filter.isFilter(T)) {
                 if (T.getKind() == .without) continue;
                 count_valid += T._types.len;
+            } else if (T == EntityID) {
+                continue;
             } else {
                 count_valid += 1;
             }
@@ -70,6 +72,8 @@ pub fn Query(comptime types: []const type) type {
                         break :blk;
                     },
                 }
+            } else if (T == EntityID) {
+                continue;
             } else {
                 final_types[curr_i] = T;
                 curr_i += 1;
@@ -164,10 +168,10 @@ pub fn Query(comptime types: []const type) type {
 
             inline for (flatten_type, 0..) |T, i| {
                 // use label to control flow in comptime
-                skip_min: {
+                skip: {
                     // skip the min_storage because its available
                     // in the result list
-                    if (i == min_storage.idx) break :skip_min;
+                    if (i == min_storage.idx) break :skip;
                     const s = ErasedComponentStorage.cast(w, T);
 
                     // NOTE: avoid silently returning error because the loop has been unrolled

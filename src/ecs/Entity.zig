@@ -20,7 +20,7 @@ pub fn withChildren(
     try callback(self);
 }
 
-/// Safety used in multi-threading mode
+/// Spawn a new entity and return the id
 pub fn spawn(self: Entity, components: anytype) Entity {
     const child_id =
         self
@@ -29,7 +29,7 @@ pub fn spawn(self: Entity, components: anytype) Entity {
             .id;
 
     self.pushChildren(&[_]ID{child_id});
-    return self;
+    return .{ .id = child_id, .world = self.world };
 }
 
 /// Push children's entity id as components for the parent entity
@@ -53,4 +53,13 @@ pub fn getComponents(
         &.{self.id},
         types,
     ))[0];
+}
+
+pub fn setComponent(
+    self: Entity,
+    comptime T: type,
+    value: T,
+) Entity {
+    self.world.setComponent(self.id, T, value);
+    return self;
 }

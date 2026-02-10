@@ -54,3 +54,12 @@ pub fn getComponents(
         types,
     ))[0];
 }
+
+pub fn setComponent(
+    self: Entity,
+    comptime T: type,
+    value: T,
+) Entity {
+    self.world.setComponent(self.id, T, value);
+    return self;
+}

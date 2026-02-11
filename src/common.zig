@@ -25,6 +25,7 @@ pub const CircleBundle = circle.Bundle;
 
 // Other components
 pub const Grid = grid.Grid;
+pub const GridBundle = grid.GridBundle;
 pub const InGrid = grid.InGrid;
 pub const Transform = transform.Transform;
 pub const Text = @import("common/components/Text.zig");

@@ -3,12 +3,14 @@ const scheds = eno.common.schedules;
 const rl = eno.common.raylib;
 
 const Query = eno.ecs.query.Query;
+const With = eno.ecs.query.With;
 const World = eno.ecs.World;
 const Camera2D = eno.common.raylib.Camera2D;
 const CircleBundle = eno.common.CircleBundle;
 const Transform = eno.common.Transform;
 
 const VELOCITY = 10;
+const Player = struct {};
 
 pub fn build(w: *World) void {
     _ = w
@@ -18,6 +20,7 @@ pub fn build(w: *World) void {
 
 fn spawn(w: *World) !void {
     _ = w.spawnEntity(.{
+        Player{},
         CircleBundle{
             .circle = .{
                 .color = .red,
@@ -49,16 +52,16 @@ fn updateCam(q: Query(&.{ *rl.Camera2D, Transform })) !void {
     };
 }
 
-fn movement(player_pos_q: Query(&.{*Transform})) !void {
+fn movement(player_pos_q: Query(&.{ *Transform, With(&.{Player}) })) !void {
     const player_pos: *Transform = player_pos_q.single()[0];
 
     if (rl.isKeyPressed(.j) or rl.isKeyPressedRepeat(.j))
-        player_pos.y -= VELOCITY;
-    if (rl.isKeyPressed(.k) or rl.isKeyPressedRepeat(.k))
         player_pos.y += VELOCITY;
+    if (rl.isKeyPressed(.k) or rl.isKeyPressedRepeat(.k))
+        player_pos.y -= VELOCITY;
 
     if (rl.isKeyPressed(.h) or rl.isKeyPressedRepeat(.h))
-        player_pos.x += VELOCITY;
-    if (rl.isKeyPressed(.l) or rl.isKeyPressedRepeat(.l))
         player_pos.x -= VELOCITY;
+    if (rl.isKeyPressed(.l) or rl.isKeyPressedRepeat(.l))
+        player_pos.x += VELOCITY;
 }

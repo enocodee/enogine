@@ -55,7 +55,7 @@ pub const CommonModule = struct {
             .render,
             render_schedules.update,
             .{ // TODO: Automate the process of adding items to queue
-                grid.render,
+                grid.addRenderToQueue,
                 rectangle.addRenderToQueue,
                 circle.addRenderToQueue,
                 texture2d.addRenderToQueue,

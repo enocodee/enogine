@@ -1,7 +1,41 @@
+const ecs = @import("../../../ecs.zig");
 const rl = @import("raylib");
 
+const World = ecs.World;
+const Resource = ecs.query.Resource;
 const Grid = @import("components.zig").Grid;
+const Transform = @import("../transform.zig").Transform;
 const QueryToRender = @import("../../utils.zig").QueryToRender;
+const RenderQueue = @import("../../../render.zig").RenderQueue;
+
+pub fn addRenderToQueue(
+    queries: QueryToRender(&.{
+        Transform,
+        ecs.Entity.ID,
+        ecs.query.With(&.{Grid}),
+    }),
+    render_queue: Resource(*RenderQueue),
+) !void {
+    for (queries.many()) |query| {
+        const transform, const entity_id = query;
+
+        try render_queue.result.add(.{
+            .render_fn = render,
+            .entity_id = entity_id,
+            .depth = transform.z,
+        });
+    }
+}
+
+pub fn render(w: *World, entity_id: ecs.Entity.ID) !void {
+    const grid = (try w.entity(entity_id).getComponents(&.{Grid}))[0];
+
+    switch (grid.render_mode) {
+        .line => renderGridLine(grid),
+        .block => renderGridBlock(grid),
+        .none => {},
+    }
+}
 
 pub fn renderGrid(queries: QueryToRender(&.{Grid})) !void {
     for (queries.many()) |q| {

@@ -25,6 +25,7 @@ pub const CircleBundle = circle.Bundle;
 
 // Other components
 pub const Grid = grid.Grid;
+pub const GridBundle = grid.GridBundle;
 pub const InGrid = grid.InGrid;
 pub const Transform = transform.Transform;
 pub const Text = @import("common/components/Text.zig");
@@ -55,7 +56,7 @@ pub const CommonModule = struct {
             .render,
             render_schedules.update,
             .{ // TODO: Automate the process of adding items to queue
-                grid.render,
+                grid.addRenderToQueue,
                 rectangle.addRenderToQueue,
                 circle.addRenderToQueue,
                 texture2d.addRenderToQueue,
@@ -65,3 +66,7 @@ pub const CommonModule = struct {
         );
     }
 };
+
+test {
+    @import("std").testing.refAllDecls(@This());
+}

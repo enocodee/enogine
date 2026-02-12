@@ -44,6 +44,8 @@ pub const Grid = struct {
     pub const Error = error{
         OverNumRow,
         OverNumCol,
+        LessNumRow,
+        LessNumCol,
     };
 
     pub const Cell = struct {
@@ -92,6 +94,23 @@ pub const Grid = struct {
         alloc.free(self.matrix);
     }
 
+    pub fn getVirtualPositionFromPixels(
+        self: Grid,
+        x_in_pixel: i32,
+        y_in_pixel: i32,
+    ) struct { x: i32, y: i32 } {
+        const width = self.cell_width + self.cell_gap;
+        const height = self.cell_height + self.cell_gap;
+
+        const start_pos_x = self.matrix[0].x;
+        const start_pos_y = self.matrix[0].y;
+
+        const x_to_idx = @divTrunc(x_in_pixel - start_pos_x, width);
+        const y_to_idx = @divTrunc(y_in_pixel - start_pos_y, height);
+
+        return .{ .x = x_to_idx, .y = y_to_idx };
+    }
+
     /// - Because the matrix is an one dimension array, so the elements can
     /// be flatted: `[1, 2, 3, 4, 5, 6, 7, 8, 9]`
     ///
@@ -134,66 +153,139 @@ pub const Grid = struct {
     ///    `>|7 |8*|9 |`
     ///     `|--|--|--|`
     pub fn getActualIndex(self: Grid, r: i32, c: i32) !usize {
+        if (r < 0) return Error.LessNumRow;
         if (r > self.num_of_rows - 1) return Error.OverNumRow;
+        if (c < 0) return Error.LessNumCol;
         if (c > self.num_of_cols - 1) return Error.OverNumCol;
         return @intCast(c + r * self.num_of_cols);
     }
-
-    test "get actual position in the grid" {
-        const alloc = std.testing.allocator;
-        var grid: Grid = .{
-            .num_of_rows = 3,
-            .num_of_cols = 3,
-            .cell_height = 1,
-            .cell_width = 1,
-            .cell_gap = 1,
-            .color = .blank,
-            .render_mode = .none,
-        };
-        grid.initCells(alloc, 0, 0);
-        defer grid.deinit(alloc);
-
-        const pos1 = try grid.getActualIndex(0, 0);
-        try std.testing.expectEqual(0, pos1);
-        try std.testing.expectEqual(0, grid.matrix[pos1].x); // 0 * (1 + 1)
-        try std.testing.expectEqual(0, grid.matrix[pos1].y); // 0 * (1 + 1)
-
-        const pos2 = try grid.getActualIndex(1, 0);
-        try std.testing.expectEqual(pos2, 3);
-        try std.testing.expectEqual(0, grid.matrix[pos2].x); // 0 * (1 + 1)
-        try std.testing.expectEqual(2, grid.matrix[pos2].y); // 1 * (1 + 1)
-
-        const pos3 = try grid.getActualIndex(1, 1);
-        try std.testing.expectEqual(4, pos3);
-        try std.testing.expectEqual(2, grid.matrix[pos3].x); // 1 * (1 + 1)
-        try std.testing.expectEqual(2, grid.matrix[pos3].y); // 1 * (1 + 1)
-
-        try std.testing.expectError(Error.OverNumCol, grid.getActualIndex(0, 4));
-        try std.testing.expectError(Error.OverNumRow, grid.getActualIndex(4, 0));
-
-        var grid2: Grid = .{
-            .num_of_cols = 3,
-            .num_of_rows = 2,
-            .cell_height = 2,
-            .cell_width = 2,
-            .cell_gap = 1,
-            .color = .blank,
-            .render_mode = .none,
-        };
-        grid2.initCells(alloc, 0, 0);
-        defer grid2.deinit(alloc);
-
-        const pos4 = try grid2.getActualIndex(0, 2);
-        try std.testing.expectEqual(2, pos4);
-        try std.testing.expectEqual(6, grid2.matrix[pos4].x); // 2 * (2 + 1)
-        try std.testing.expectEqual(0, grid2.matrix[pos4].y); // 0 * (2 + 1)
-
-        const pos5 = try grid2.getActualIndex(1, 2);
-        try std.testing.expectEqual(5, pos5);
-        try std.testing.expectEqual(6, grid2.matrix[pos5].x); // 2 * (2 + 1)
-        try std.testing.expectEqual(3, grid2.matrix[pos5].y); // 2 * (2 + 1)
-
-        try std.testing.expectError(Error.OverNumRow, grid2.getActualIndex(2, 3));
-        try std.testing.expectError(Error.OverNumRow, grid2.getActualIndex(3, 4));
-    }
 };
+
+test "get actual position in the grid" {
+    const alloc = std.testing.allocator;
+    var grid: Grid = .{
+        .num_of_rows = 3,
+        .num_of_cols = 3,
+        .cell_height = 1,
+        .cell_width = 1,
+        .cell_gap = 1,
+        .color = .blank,
+        .render_mode = .none,
+    };
+    grid.initCells(alloc, 0, 0);
+    defer grid.deinit(alloc);
+
+    const pos1 = try grid.getActualIndex(0, 0);
+    try std.testing.expectEqual(0, pos1);
+    try std.testing.expectEqual(0, grid.matrix[pos1].x); // 0 * (1 + 1)
+    try std.testing.expectEqual(0, grid.matrix[pos1].y); // 0 * (1 + 1)
+
+    const pos2 = try grid.getActualIndex(1, 0);
+    try std.testing.expectEqual(pos2, 3);
+    try std.testing.expectEqual(0, grid.matrix[pos2].x); // 0 * (1 + 1)
+    try std.testing.expectEqual(2, grid.matrix[pos2].y); // 1 * (1 + 1)
+
+    const pos3 = try grid.getActualIndex(1, 1);
+    try std.testing.expectEqual(4, pos3);
+    try std.testing.expectEqual(2, grid.matrix[pos3].x); // 1 * (1 + 1)
+    try std.testing.expectEqual(2, grid.matrix[pos3].y); // 1 * (1 + 1)
+
+    try std.testing.expectError(Grid.Error.OverNumCol, grid.getActualIndex(0, 4));
+    try std.testing.expectError(Grid.Error.OverNumRow, grid.getActualIndex(4, 0));
+
+    var grid2: Grid = .{
+        .num_of_cols = 3,
+        .num_of_rows = 2,
+        .cell_height = 2,
+        .cell_width = 2,
+        .cell_gap = 1,
+        .color = .blank,
+        .render_mode = .none,
+    };
+    grid2.initCells(alloc, 0, 0);
+    defer grid2.deinit(alloc);
+
+    const pos4 = try grid2.getActualIndex(0, 2);
+    try std.testing.expectEqual(2, pos4);
+    try std.testing.expectEqual(6, grid2.matrix[pos4].x); // 2 * (2 + 1)
+    try std.testing.expectEqual(0, grid2.matrix[pos4].y); // 0 * (2 + 1)
+
+    const pos5 = try grid2.getActualIndex(1, 2);
+    try std.testing.expectEqual(5, pos5);
+    try std.testing.expectEqual(6, grid2.matrix[pos5].x); // 2 * (2 + 1)
+    try std.testing.expectEqual(3, grid2.matrix[pos5].y); // 2 * (2 + 1)
+
+    try std.testing.expectError(Grid.Error.OverNumRow, grid2.getActualIndex(2, 3));
+    try std.testing.expectError(Grid.Error.OverNumRow, grid2.getActualIndex(3, 4));
+}
+
+test "get virtual position from pixels" {
+    const PositionInPixel = struct {
+        x: i32,
+        y: i32,
+    };
+    const alloc = std.testing.allocator;
+
+    var grid = Grid{
+        .cell_width = 16,
+        .cell_height = 16,
+        .cell_gap = 0,
+        .num_of_cols = 10,
+        .num_of_rows = 10,
+        .color = .blank,
+        .render_mode = .none,
+    };
+    defer grid.deinit(alloc);
+    grid.initCells(alloc, 0, 0);
+
+    const pos1: PositionInPixel = .{ .x = 100, .y = 100 };
+    const pos2: PositionInPixel = .{ .x = 160, .y = 160 };
+    const pos3: PositionInPixel = .{ .x = 120, .y = 100 };
+
+    const idx1 = grid.getVirtualPositionFromPixels(pos1.x, pos1.y);
+    const idx2 = grid.getVirtualPositionFromPixels(pos2.x, pos2.y);
+    const idx3 = grid.getVirtualPositionFromPixels(pos3.x, pos3.y);
+
+    try std.testing.expectEqual(6, idx1.x);
+    try std.testing.expectEqual(6, idx1.y);
+
+    try std.testing.expectEqual(10, idx2.x);
+    try std.testing.expectEqual(10, idx2.y);
+
+    try std.testing.expectEqual(7, idx3.x);
+    try std.testing.expectEqual(6, idx3.y);
+
+    var grid2 = Grid{
+        .cell_width = 16,
+        .cell_height = 16,
+        .cell_gap = 0,
+        .num_of_cols = 10,
+        .num_of_rows = 10,
+        .color = .blank,
+        .render_mode = .none,
+    };
+    defer grid2.deinit(alloc);
+    grid2.initCells(alloc, 100, 100);
+
+    const pos4: PositionInPixel = .{ .x = 100, .y = 100 };
+    const pos5: PositionInPixel = .{ .x = 160, .y = 160 };
+    const pos6: PositionInPixel = .{ .x = 120, .y = 100 };
+    const pos7: PositionInPixel = .{ .x = 90, .y = 60 };
+
+    const idx4 = grid2.getVirtualPositionFromPixels(pos4.x, pos4.y);
+    const idx5 = grid2.getVirtualPositionFromPixels(pos5.x, pos5.y);
+    const idx6 = grid2.getVirtualPositionFromPixels(pos6.x, pos6.y);
+    const idx7 = grid2.getVirtualPositionFromPixels(pos7.x, pos7.y);
+
+    try std.testing.expectEqual(0, idx4.x);
+    try std.testing.expectEqual(0, idx4.y);
+
+    try std.testing.expectEqual(3, idx5.x);
+    try std.testing.expectEqual(3, idx5.y);
+
+    try std.testing.expectEqual(1, idx6.x);
+    try std.testing.expectEqual(0, idx6.y);
+
+    try std.testing.expectEqual(0, idx7.x);
+    try std.testing.expectEqual(-2, idx7.y);
+}

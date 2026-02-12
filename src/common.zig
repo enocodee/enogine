@@ -66,3 +66,7 @@ pub const CommonModule = struct {
         );
     }
 };
+
+test {
+    @import("std").testing.refAllDecls(@This());
+}

@@ -37,10 +37,20 @@ pub fn pushChildren(
     self: Entity,
     child_ids: []const ID,
 ) void {
-    for (child_ids) |c_id| {
-        self
-            .world
-            .setComponent(self.id, Children, .{ .id = c_id });
+    if (self.getComponents(&.{*Children})) |query| {
+        const children: *Children = query[0];
+        children.ids.appendSlice(self.world.alloc, child_ids) catch @panic("OOM");
+    } else |err| switch (err) {
+        World.GetComponentError.ValueNotFound, World.GetComponentError.StorageNotFound => {
+            _ = self.setComponent(Children, .{ .ids = .empty });
+            const children: *Children =
+                (self
+                    .getComponents(&.{*Children}) catch
+                    @panic("OOM") // if this error occurs, maybe its from list allocations in `tuplesFromTypes`.
+                )[0];
+            children.ids.appendSlice(self.world.alloc, child_ids) catch @panic("OOM");
+        },
+        std.mem.Allocator.Error.OutOfMemory => @panic("OOM"),
     }
 }
 

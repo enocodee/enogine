@@ -276,7 +276,7 @@ pub fn newComponentStorage(
         .remove_entity_fn = struct {
             pub fn remove(w: *const World, entity_id: Entity.ID) !void {
                 const self_storage = try ErasedComponentStorage.cast(w, T);
-                const instance = self_storage.data.fetchRemove(entity_id) orelse {
+                var instance = self_storage.data.fetchRemove(entity_id) orelse {
                     std.log.err("not found any value of `{s}` component of the entity (id: `{d}`).", .{ @typeName(T), entity_id });
                     return GetComponentError.ValueNotFound;
                 };

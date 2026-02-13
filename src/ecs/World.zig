@@ -133,7 +133,18 @@ pub fn spawnEntity(
     };
 }
 
-// TODO: despawnEntity()
+fn despawnEntity(
+    self: *World,
+    entity_id: usize,
+) !void {
+    var storage_key_iter = self.component_storages.valueIterator();
+    while (storage_key_iter.next()) |storage| {
+        storage.remove_entity_fn(self, entity_id) catch |err| switch (err) {
+            GetComponentError.ValueNotFound => {},
+            else => return err,
+        };
+    }
+}
 
 fn extractComponent(
     self: *World,
@@ -262,6 +273,16 @@ pub fn newComponentStorage(
                 alloc.destroy(ptr);
             }
         }.deinit,
+        .remove_entity_fn = struct {
+            pub fn remove(w: *const World, entity_id: Entity.ID) !void {
+                const self_storage = try ErasedComponentStorage.cast(w, T);
+                var instance = self_storage.data.fetchRemove(entity_id) orelse {
+                    std.log.err("not found any value of `{s}` component of the entity (id: `{d}`).", .{ @typeName(T), entity_id });
+                    return GetComponentError.ValueNotFound;
+                };
+                if (std.meta.hasFn(T, "deinit")) instance.value.deinit(w.alloc);
+            }
+        }.remove,
     }) catch @panic("OOM");
 
     std.log.debug("Add component - {s}", .{@typeName(T)});
@@ -327,12 +348,14 @@ pub fn getMutComponent(
     return s.data.getPtr(entity_id) orelse GetComponentError.ValueNotFound;
 }
 
-test "Init entities" {
+test "init & deinit entities" {
     const alloc = std.testing.allocator;
 
     const Position = struct {
         x: i32,
         y: i32,
+
+        pub fn deinit(_: *const @This(), _: std.mem.Allocator) void {}
     };
 
     var world: World = .init(alloc);
@@ -351,6 +374,13 @@ test "Init entities" {
     const comp_value_2 = try world.getComponent(entity_2, Position);
     try std.testing.expect(comp_value_2.x == 10);
     try std.testing.expect(comp_value_2.y == 6);
+
+    try world.despawnEntity(entity_1);
+
+    try std.testing.expectError(
+        GetComponentError.ValueNotFound,
+        world.getComponent(entity_1, Position),
+    );
 }
 
 /// This function can cause to `panic` due to the `schedule_label`

@@ -25,6 +25,7 @@ pub fn Storage(comptime T: type) type {
 pub const ErasedStorage = struct {
     ptr: *anyopaque,
     deinit_fn: *const fn (*const World, std.mem.Allocator) void,
+    remove_entity_fn: *const fn (*const World, EntityID) anyerror!void,
 
     pub inline fn cast(w: *const World, comptime T: type) !*Storage(ecs_util.Deref(T)) {
         const Type = ecs_util.Deref(T);

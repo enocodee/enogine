@@ -2,10 +2,8 @@
 /// it can be recursive.
 ///
 /// After using `world.spawnEntity()`, the function will return a
-/// value of type `Entity` and we can use its `spawnChildren()` to
-/// spawn children.
-///
-/// TODO: despawn children
+/// value of type `Entity` and we can use its `withChildren()` to
+/// spawn children in a callback.
 const std = @import("std");
 const eno = @import("eno");
 const ecs = eno.ecs;
@@ -20,15 +18,16 @@ const Transform = common.Transform;
 const TextBundle = common.TextBundle;
 
 const Query = eno.ecs.query.Query;
+const With = eno.ecs.query.With;
 
-const Element = struct {
+const NodeData = struct {
     name: [:0]const u8,
     offset_x: i32,
     offset_y: i32,
-    children: []const Element,
+    children: []const NodeData,
 };
 
-const children: []const Element = &.{
+const children: []const NodeData = &.{
     .{ .name = "B", .offset_x = 50, .offset_y = 50, .children = &.{
         .{ .name = "C", .offset_x = 50, .offset_y = 50, .children = &.{} },
         .{ .name = "F", .offset_x = 100, .offset_y = 50, .children = &.{} },
@@ -38,6 +37,8 @@ const children: []const Element = &.{
         .{ .name = "D", .offset_x = 50, .offset_y = 50, .children = &.{} },
     } },
 };
+
+const Node = struct {};
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}).init;
@@ -54,7 +55,11 @@ pub fn main() !void {
     _ = try world
         .addModules(&.{eno.common.CommonModule}) // this is important
         .addSystem(.system, eno.common.schedules.startup, spawn)
-        .addSystem(.system, eno.common.schedules.update, closeWindow)
+        .addSystems(.system, eno.common.schedules.update, &.{
+            closeWindow,
+            onHover,
+            onClicked,
+        })
         .addSystem(.render, eno.common.schedules.update, drawRelationship)
         .run();
 }
@@ -67,7 +72,15 @@ fn spawn(w: *World) !void {
     const half_screen_width = @divTrunc(rl.getScreenWidth(), 2);
     const half_screen_height = @divTrunc(rl.getScreenHeight(), 2);
 
+    _ = w.spawnEntity(&.{
+        TextBundle{
+            .text = try .initWithDefaultFont(.{ .str = "Click on a node to despawn" }, .gray, 30),
+            .transform = .fromXYZ(100, 100, 0),
+        },
+    });
+
     try w.spawnEntity(.{
+        Node{},
         TextBundle{
             .transform = .fromXYZ(half_screen_width, half_screen_height, 0),
             .text = try .initWithDefaultFont(.{ .str = "A" }, .black, 20),
@@ -77,10 +90,11 @@ fn spawn(w: *World) !void {
             try recursiveSpawnChildren(parent, children);
         }
 
-        fn recursiveSpawnChildren(parent: Entity, _children: []const Element) !void {
+        fn recursiveSpawnChildren(parent: Entity, _children: []const NodeData) !void {
             const parent_transform = (try parent.getComponents(&.{Transform}))[0];
             for (_children) |child| {
                 const entity = parent.spawn(&.{
+                    Node{},
                     TextBundle{
                         .transform = .fromXYZ(
                             parent_transform.x + child.offset_x,
@@ -97,10 +111,65 @@ fn spawn(w: *World) !void {
     }.spawnChildren);
 }
 
-fn drawRelationship(w: *World, children_q: Query(&.{ Children, Transform })) !void {
+fn onHover(
+    text_q: Query(&.{
+        Transform,
+        *common.Text,
+        With(&.{Node}),
+    }),
+) !void {
+    for (text_q.many()) |query| {
+        const transform, const text = query;
+        const mouse_pos = rl.getMousePosition();
+        if (rl.checkCollisionPointRec(mouse_pos, .{
+            .x = @floatFromInt(transform.x),
+            .y = @floatFromInt(transform.y),
+            .width = text.size,
+            .height = text.size,
+        })) {
+            text.size = 30;
+        } else {
+            text.size = 20;
+        }
+    }
+}
+
+fn onClicked(
+    w: *World,
+    text_q: Query(&.{
+        Transform,
+        *common.Text,
+        Entity.ID,
+        With(&.{Node}),
+    }),
+) !void {
+    for (text_q.many()) |query| {
+        const transform, const text, const entity_id = query;
+        const mouse_pos = rl.getMousePosition();
+        if (rl.isMouseButtonPressed(.left)) {
+            if (rl.checkCollisionPointRec(mouse_pos, .{
+                .x = @floatFromInt(transform.x),
+                .y = @floatFromInt(transform.y),
+                .width = text.size,
+                .height = text.size,
+            })) {
+                try w.entity(entity_id).despawnRecursive();
+            }
+        }
+    }
+}
+
+fn drawRelationship(
+    w: *World,
+    children_q: Query(&.{
+        Children,
+        Transform,
+        With(&.{Node}),
+    }),
+) !void {
     for (children_q.many()) |query| {
         const children_container, const parent_transform = query;
-        for (children_container.ids.items) |c_id| {
+        for (children_container.child_ids.items) |c_id| {
             const children_transform =
                 (try w
                     .entity(c_id)

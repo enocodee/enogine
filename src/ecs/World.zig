@@ -144,8 +144,14 @@ pub fn despawnEntity(
     self: *World,
     entity_id: usize,
 ) !void {
-    { // ensure all children of the entity are removed
-        const children_storage = try ErasedComponentStorage.cast(self, hierarchy.Children);
+    blk: { // ensure all children of the entity are removed
+        const children_storage = ErasedComponentStorage.cast(
+            self,
+            hierarchy.Children,
+        ) catch |err| switch (err) {
+            GetComponentError.StorageNotFound => break :blk,
+            else => return err,
+        };
         if (children_storage.data.contains(entity_id))
             return DespawnError.ChildrenStillAlive;
     }

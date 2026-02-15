@@ -18,6 +18,7 @@ const ecs_common = @import("../common.zig");
 const _query = @import("query.zig");
 const _system = @import("system.zig");
 const schedule = @import("schedule.zig");
+const hierarchy = @import("hierarchy.zig");
 
 const ErasedComponentStorage = component.ErasedStorage;
 const ComponentStorage = component.Storage;
@@ -133,10 +134,23 @@ pub fn spawnEntity(
     };
 }
 
-fn despawnEntity(
+pub const DespawnError = error{
+    /// Despawn an entity when children are still
+    /// alive.
+    ChildrenStillAlive,
+};
+
+pub fn despawnEntity(
     self: *World,
     entity_id: usize,
 ) !void {
+    { // ensure all children of the entity are removed
+        const children_storage = try ErasedComponentStorage.cast(self, hierarchy.Children);
+        if (children_storage.data.contains(entity_id))
+            return DespawnError.ChildrenStillAlive;
+    }
+
+    try hierarchy.unrelated(self, entity_id);
     var storage_key_iter = self.component_storages.valueIterator();
     while (storage_key_iter.next()) |storage| {
         storage.remove_entity_fn(self, entity_id) catch |err| switch (err) {
@@ -276,10 +290,12 @@ pub fn newComponentStorage(
         .remove_entity_fn = struct {
             pub fn remove(w: *const World, entity_id: Entity.ID) !void {
                 const self_storage = try ErasedComponentStorage.cast(w, T);
-                var instance = self_storage.data.fetchRemove(entity_id) orelse {
-                    std.log.err("not found any value of `{s}` component of the entity (id: `{d}`).", .{ @typeName(T), entity_id });
+                var instance =
+                    self_storage
+                        .data
+                        .fetchRemove(entity_id) orelse
                     return GetComponentError.ValueNotFound;
-                };
+
                 if (std.meta.hasFn(T, "deinit")) instance.value.deinit(w.alloc);
             }
         }.remove,
@@ -333,10 +349,7 @@ pub fn getComponent(
     comptime T: type,
 ) GetComponentError!T {
     const s = try ErasedComponentStorage.cast(self, T);
-    return s.data.get(entity_id) orelse {
-        std.log.err("not found any value of `{s}` component of the entity (id: `{d}`).", .{ @typeName(T), entity_id });
-        return GetComponentError.ValueNotFound;
-    };
+    return s.data.get(entity_id) orelse GetComponentError.ValueNotFound;
 }
 
 pub fn getMutComponent(

@@ -7,7 +7,7 @@ const ErasedComponentStorage = @import("component.zig").ErasedStorage;
 const World = @import("World.zig");
 const EntityID = @import("Entity.zig").ID;
 
-pub const QueryError = error{OutOfMemory} || World.GetComponentError;
+pub const QueryError = error{OutOfMemory} || World.GetComponentError || World.GetResourceError;
 
 pub const filter = struct {
     pub const With = query_filter.With;

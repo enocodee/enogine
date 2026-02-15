@@ -2,12 +2,26 @@
 //!
 //! Systems define how controlling elements (entity, component,
 //! resource, ...) in application.
+//!
+//! # Related features:
+//! - **Query:** see `ecs.query` namespace for more details
+//!
+//! - **Auto-wiring:** currently, there are some parameters that
+//!   will be attached automatically if they are defined for a system.
+//!
+//! - **System sets**: at the current implementation, its often used in
+//!   order to arrange systems by order via Set.Config.
+//!   + `after`: all systems from these sets should be executed **after**
+//!   the owner.
+//!   + `before`: all systems from these sets should be executed **before**
+//!   the owner.
 const std = @import("std");
 
 const Allocator = std.mem.Allocator;
 const Arena = std.heap.ArenaAllocator;
 const World = @import("World.zig");
 
+const QueryError = @import("query.zig").QueryError;
 pub const Handler = *const fn (*World) anyerror!void;
 
 /// A component represent for `systems`
@@ -58,6 +72,7 @@ pub fn toHandler(comptime system: anytype) Handler {
     const H = struct {
         pub fn handle(w: *World) !void {
             const SystemType = @TypeOf(system);
+
             // SAFETY: assign after parsing
             var args: std.meta.ArgsTuple(SystemType) = undefined;
             const system_info = @typeInfo(SystemType).@"fn";
@@ -71,11 +86,19 @@ pub fn toHandler(comptime system: anytype) Handler {
                         const T = param.type.?;
                         if (T == World) continue;
 
-                        // Query(...)
                         // NOTE: This allow custom query functions
                         if (@hasDecl(T, "query")) {
                             var obj: T = .{};
-                            try obj.query(w);
+                            obj.query(w) catch |err| {
+                                if (@TypeOf(err) == QueryError) switch (err) {
+                                    // Ignore if query fails due to missing storages or components.
+                                    // This allows to skip all systems that need to be performed if
+                                    // all required are fetched.
+                                    QueryError.ValueNotFound, QueryError.StorageNotFound => return,
+                                    else => return err,
+                                };
+                            };
+
                             args[i] = obj;
                         }
                     },

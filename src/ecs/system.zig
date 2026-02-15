@@ -2,12 +2,19 @@
 //!
 //! Systems define how controlling elements (entity, component,
 //! resource, ...) in application.
+//!
+//! Related features:
+//! + Query: see `ecs.query` namespace for more details
+//! NOTE: While querying required components in `Query()`,
+//! if its failed, it's system calling will be canceled and
+//! skipped.
 const std = @import("std");
 
 const Allocator = std.mem.Allocator;
 const Arena = std.heap.ArenaAllocator;
 const World = @import("World.zig");
 
+const QueryError = @import("query.zig").QueryError;
 pub const Handler = *const fn (*World) anyerror!void;
 
 /// A component represent for `systems`
@@ -58,6 +65,7 @@ pub fn toHandler(comptime system: anytype) Handler {
     const H = struct {
         pub fn handle(w: *World) !void {
             const SystemType = @TypeOf(system);
+
             // SAFETY: assign after parsing
             var args: std.meta.ArgsTuple(SystemType) = undefined;
             const system_info = @typeInfo(SystemType).@"fn";
@@ -75,7 +83,13 @@ pub fn toHandler(comptime system: anytype) Handler {
                         // NOTE: This allow custom query functions
                         if (@hasDecl(T, "query")) {
                             var obj: T = .{};
-                            try obj.query(w);
+                            obj.query(w) catch |err| {
+                                if (@TypeOf(err) == QueryError) switch (err) {
+                                    QueryError.ValueNotFound, QueryError.StorageNotFound => return,
+                                    else => return err,
+                                };
+                            };
+
                             args[i] = obj;
                         }
                     },

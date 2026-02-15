@@ -9,18 +9,14 @@ const EntityID = @import("../Entity.zig").ID;
 /// The result will be written to `l1` and the order of
 /// elements following `l1`.
 ///
-/// If one of lists is `null`, assign remaining value to `l1`.
+/// If one of lists is `null`, no operation is performed.
 pub fn findIdentical(
     alloc: std.mem.Allocator,
     l1: *std.ArrayList(EntityID),
     l2: std.ArrayList(EntityID),
 ) !void {
     if (l2.items.len == 0) return;
-    if (l1.items.len == 0) {
-        l1.clearAndFree(alloc);
-        try l1.appendSlice(alloc, l2.items);
-        return;
-    }
+    if (l1.items.len == 0) return;
 
     var l: std.ArrayList(EntityID) = .empty;
     defer l.deinit(alloc);

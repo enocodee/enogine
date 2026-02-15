@@ -3,11 +3,18 @@
 //! Systems define how controlling elements (entity, component,
 //! resource, ...) in application.
 //!
-//! Related features:
-//! + Query: see `ecs.query` namespace for more details
-//! NOTE: While querying required components in `Query()`,
-//! if its failed, it's system calling will be canceled and
-//! skipped.
+//! # Related features:
+//! - **Query:** see `ecs.query` namespace for more details
+//!
+//! - **Auto-wiring:** currently, there are some parameters that
+//!   will be attached automatically if they are defined for a system.
+//!
+//! - **System sets**: at the current implementation, its often used in
+//!   order to arrange systems by order via Set.Config.
+//!   + `after`: all systems from these sets should be executed **after**
+//!   the owner.
+//!   + `before`: all systems from these sets should be executed **before**
+//!   the owner.
 const std = @import("std");
 
 const Allocator = std.mem.Allocator;
@@ -79,12 +86,14 @@ pub fn toHandler(comptime system: anytype) Handler {
                         const T = param.type.?;
                         if (T == World) continue;
 
-                        // Query(...)
                         // NOTE: This allow custom query functions
                         if (@hasDecl(T, "query")) {
                             var obj: T = .{};
                             obj.query(w) catch |err| {
                                 if (@TypeOf(err) == QueryError) switch (err) {
+                                    // Ignore if query fails due to missing storages or components.
+                                    // This allows to skip all systems that need to be performed if
+                                    // all required are fetched.
                                     QueryError.ValueNotFound, QueryError.StorageNotFound => return,
                                     else => return err,
                                 };

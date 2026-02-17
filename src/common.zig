@@ -54,7 +54,7 @@ pub const CommonModule = struct {
             })
             .addSystemsWithConfig(
             .render,
-            render_schedules.update,
+            render_schedules.prepare,
             .{ // TODO: Automate the process of adding items to queue
                 grid.addRenderToQueue,
                 rectangle.addRenderToQueue,

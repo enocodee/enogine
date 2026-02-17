@@ -24,10 +24,10 @@ pub const RenderSet = SystemSet{ .name = "render" };
 pub const UiRenderSet = SystemSet{ .name = "ui_render" };
 
 pub const schedules = struct {
-    pub const startup = ScheduleLabel.init("startup");
+    pub const init = ScheduleLabel.init("init");
     /// Prepare needed information (render queue) for
     /// the `process_render` schedule
-    pub const update = ScheduleLabel.init("update");
+    pub const prepare = ScheduleLabel.init("prepare");
     /// This schedule draw all renderable component
     pub const process_render = ScheduleLabel.init("process_render");
     pub const deinit = ScheduleLabel.init("deinit");
@@ -36,8 +36,8 @@ pub const schedules = struct {
 const RenderScheduleOrder = struct {
     /// Run multiple times
     labels: []const ScheduleLabel = &[_]ScheduleLabel{
-        schedules.startup,
-        schedules.update,
+        schedules.init,
+        schedules.prepare,
         schedules.process_render,
         schedules.deinit,
     },
@@ -87,6 +87,8 @@ pub fn processRender(
 ) !void {
     const queue = render_queue.result;
     var iter = queue.iterator();
+
+    // TODO: keep orders between sets
     while (iter.next()) |item| {
         try item.render_fn(w, item.entity_id);
     }
@@ -96,15 +98,15 @@ pub fn processRender(
 pub const schedule_mod = struct {
     pub fn build(w: *World) void {
         _ = w
-            .addSchedule(.render, schedules.startup)
-            .addSchedule(.render, schedules.update)
+            .addSchedule(.render, schedules.init)
+            .addSchedule(.render, schedules.prepare)
             .addSchedule(.render, schedules.process_render)
             .addSchedule(.render, schedules.deinit)
             .addResource(RenderScheduleOrder, .{})
             .addResource(RenderQueue, .init(w.alloc, {}))
             .configureSet(
                 .render,
-                schedules.update,
+                schedules.prepare,
                 UiRenderSet,
                 .{ .after = &.{RenderSet} },
             )

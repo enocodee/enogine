@@ -31,6 +31,16 @@ pub const schedules = struct {
     /// This schedule draw all renderable component
     pub const process_render = ScheduleLabel.init("process_render");
     pub const deinit = ScheduleLabel.init("deinit");
+
+    /// This is not intended, just implement for handling ordering & rendering
+    /// for the ui and non-ui components.
+    /// All render system that are executed after the `end_cam` schedule
+    /// will be pinned on the screen.
+    ///
+    /// TODO: find another way
+    pub const begin_cam = ScheduleLabel.init("begin_cam");
+    pub const end_cam = ScheduleLabel.init("end_cam");
+    pub const ui_process_render = ScheduleLabel.init("ui_process_render");
 };
 
 const RenderScheduleOrder = struct {
@@ -38,7 +48,10 @@ const RenderScheduleOrder = struct {
     labels: []const ScheduleLabel = &[_]ScheduleLabel{
         schedules.init,
         schedules.prepare,
+        schedules.begin_cam,
         schedules.process_render,
+        schedules.end_cam,
+        schedules.ui_process_render,
         schedules.deinit,
     },
 };
@@ -88,7 +101,6 @@ pub fn processRender(
     const queue = render_queue.result;
     var iter = queue.iterator();
 
-    // TODO: keep orders between sets
     while (iter.next()) |item| {
         try item.render_fn(w, item.entity_id);
     }
@@ -112,5 +124,10 @@ pub const schedule_mod = struct {
             )
             .addSystem(.render, Scheduler.entry, render)
             .addSystem(.render, schedules.process_render, processRender);
+
+        _ = w
+            .addSchedule(.render, schedules.begin_cam)
+            .addSchedule(.render, schedules.end_cam)
+            .addSchedule(.render, schedules.ui_process_render);
     }
 };

@@ -1,6 +1,6 @@
 const rl = @import("raylib");
 const ecs = @import("ecs.zig");
-const scheds = @import("common.zig").schedule.schedules;
+const scheds = @import("render.zig").schedules;
 
 const World = ecs.World;
 const QueryUiToRender = @import("ui/utils.zig").QueryUiToRender;
@@ -56,7 +56,7 @@ fn render(queries: QueryUiToRender) !void {
 pub fn build(w: *World) void {
     _ = w.addSystemWithConfig(
         .render,
-        scheds.update,
+        scheds.ui_process_render,
         render,
         .{ .in_sets = &.{@import("render.zig").UiRenderSet} },
     );

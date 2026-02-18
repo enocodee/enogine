@@ -1,5 +1,5 @@
 const common_utils = @import("common/utils.zig");
-const scheds = @import("common.zig").schedules;
+const scheds = @import("render.zig").schedules;
 const rl = @import("common.zig").raylib;
 
 const World = @import("ecs.zig").World;
@@ -9,8 +9,8 @@ pub const CameraModule = struct {
         _ = w
             // this is setup for 2d camera in raylib
             // TODO: add 3d-camera
-            .addSystem(.render, scheds.startup, beginCam)
-            .addSystem(.render, scheds.deinit, endCam);
+            .addSystem(.render, scheds.begin_cam, beginCam)
+            .addSystem(.render, scheds.end_cam, endCam);
     }
 };
 

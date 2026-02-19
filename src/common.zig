@@ -33,7 +33,7 @@ pub const TextBundle = Text.Bundle;
 
 // Texture
 const texture2d = @import("common/components/texture2d.zig");
-pub const Texture2D = texture2d.Texture2D;
+const TextureBundle = texture2d.Bundle;
 
 // TODO: remove all api from raylib
 

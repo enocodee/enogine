@@ -13,7 +13,7 @@ pub fn build(w: *World) void {
 fn spawn(w: *World) !void {
     const map_img = try rl.loadImage("assets/map.png");
     _ = w.spawnEntity(&.{
-        try eno.common.Texture2D.fromImage(map_img),
+        try rl.Texture2D.fromImage(map_img),
         Transform.fromXYZ(
             0,
             0,

@@ -7,7 +7,10 @@ const ErasedComponentStorage = @import("component.zig").ErasedStorage;
 const World = @import("World.zig");
 const EntityID = @import("Entity.zig").ID;
 
-pub const QueryError = error{OutOfMemory} || World.GetComponentError || World.GetResourceError;
+pub const QueryError = error{
+    OutOfMemory,
+    ResultEmpty,
+} || World.GetComponentError || World.GetResourceError;
 
 pub const filter = struct {
     pub const With = query_filter.With;
@@ -200,7 +203,10 @@ pub fn Query(comptime types: []const type) type {
                 }
             }
 
-            self.result.tuples = try query_util.tuplesFromTypes(w, final_list.items, &queried_type);
+            const result = try query_util.tuplesFromTypes(w, final_list.items, &queried_type);
+            if (result.len > 0) {
+                self.result.tuples = result;
+            } else return QueryError.ResultEmpty;
         }
 
         /// return the first result element

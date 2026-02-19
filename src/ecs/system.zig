@@ -91,10 +91,13 @@ pub fn toHandler(comptime system: anytype) Handler {
                             var obj: T = .{};
                             obj.query(w) catch |err| {
                                 if (@TypeOf(err) == QueryError) switch (err) {
-                                    // Ignore if query fails due to missing storages or components.
-                                    // This allows to skip all systems that need to be performed if
-                                    // all required are fetched.
-                                    QueryError.ValueNotFound, QueryError.StorageNotFound => return,
+                                    // Ignore if query fails due to missing storages or components
+                                    // or the result empty. This allows to skip all systems that
+                                    // need to be performed if all required are fetched.
+                                    QueryError.ValueNotFound,
+                                    QueryError.StorageNotFound,
+                                    QueryError.ResultEmpty,
+                                    => return,
                                     else => return err,
                                 };
                             };

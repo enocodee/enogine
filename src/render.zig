@@ -64,15 +64,7 @@ pub const RenderItem = struct {
 
 fn compareRI(ctx: void, a: RenderItem, b: RenderItem) std.math.Order {
     _ = ctx;
-    if (a.depth == b.depth) {
-        return .eq;
-    } else if (a.depth < b.depth) {
-        return .lt;
-    } else if (a.depth > b.depth) {
-        return .gt;
-    } else {
-        unreachable;
-    }
+    return std.math.order(a.depth, b.depth);
 }
 
 /// This queue affects **2d components** in the form of layers.
@@ -99,12 +91,10 @@ pub fn processRender(
     render_queue: Resource(*RenderQueue),
 ) !void {
     const queue = render_queue.result;
-    var iter = queue.iterator();
 
-    while (iter.next()) |item| {
+    while (queue.removeOrNull()) |item| {
         try item.render_fn(w, item.entity_id);
     }
-    queue.clearAndFree(); // reset the queue
 }
 
 pub const schedule_mod = struct {

@@ -40,6 +40,7 @@ pub const schedules = struct {
     /// TODO: find another way
     pub const begin_cam = ScheduleLabel.init("begin_cam");
     pub const end_cam = ScheduleLabel.init("end_cam");
+    pub const ui_prepare = ScheduleLabel.init("ui_prepare");
     pub const ui_process_render = ScheduleLabel.init("ui_process_render");
 };
 
@@ -51,6 +52,7 @@ const RenderScheduleOrder = struct {
         schedules.begin_cam,
         schedules.process_render,
         schedules.end_cam,
+        schedules.ui_prepare,
         schedules.ui_process_render,
         schedules.deinit,
     },
@@ -118,6 +120,7 @@ pub const schedule_mod = struct {
         _ = w
             .addSchedule(.render, schedules.begin_cam)
             .addSchedule(.render, schedules.end_cam)
+            .addSchedule(.render, schedules.ui_prepare)
             .addSchedule(.render, schedules.ui_process_render);
     }
 };

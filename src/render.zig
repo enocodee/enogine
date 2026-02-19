@@ -24,21 +24,36 @@ pub const RenderSet = SystemSet{ .name = "render" };
 pub const UiRenderSet = SystemSet{ .name = "ui_render" };
 
 pub const schedules = struct {
-    pub const startup = ScheduleLabel.init("startup");
+    pub const init = ScheduleLabel.init("init");
     /// Prepare needed information (render queue) for
     /// the `process_render` schedule
-    pub const update = ScheduleLabel.init("update");
+    pub const prepare = ScheduleLabel.init("prepare");
     /// This schedule draw all renderable component
     pub const process_render = ScheduleLabel.init("process_render");
     pub const deinit = ScheduleLabel.init("deinit");
+
+    /// This is not intended, just implement for handling ordering & rendering
+    /// for the ui and non-ui components.
+    /// All render system that are executed after the `end_cam` schedule
+    /// will be pinned on the screen.
+    ///
+    /// TODO: find another way
+    pub const begin_cam = ScheduleLabel.init("begin_cam");
+    pub const end_cam = ScheduleLabel.init("end_cam");
+    pub const ui_prepare = ScheduleLabel.init("ui_prepare");
+    pub const ui_process_render = ScheduleLabel.init("ui_process_render");
 };
 
 const RenderScheduleOrder = struct {
     /// Run multiple times
     labels: []const ScheduleLabel = &[_]ScheduleLabel{
-        schedules.startup,
-        schedules.update,
+        schedules.init,
+        schedules.prepare,
+        schedules.begin_cam,
         schedules.process_render,
+        schedules.end_cam,
+        schedules.ui_prepare,
+        schedules.ui_process_render,
         schedules.deinit,
     },
 };
@@ -51,15 +66,7 @@ pub const RenderItem = struct {
 
 fn compareRI(ctx: void, a: RenderItem, b: RenderItem) std.math.Order {
     _ = ctx;
-    if (a.depth == b.depth) {
-        return .eq;
-    } else if (a.depth < b.depth) {
-        return .lt;
-    } else if (a.depth > b.depth) {
-        return .gt;
-    } else {
-        unreachable;
-    }
+    return std.math.order(a.depth, b.depth);
 }
 
 /// This queue affects **2d components** in the form of layers.
@@ -86,29 +93,34 @@ pub fn processRender(
     render_queue: Resource(*RenderQueue),
 ) !void {
     const queue = render_queue.result;
-    var iter = queue.iterator();
-    while (iter.next()) |item| {
+
+    while (queue.removeOrNull()) |item| {
         try item.render_fn(w, item.entity_id);
     }
-    queue.clearAndFree(); // reset the queue
 }
 
 pub const schedule_mod = struct {
     pub fn build(w: *World) void {
         _ = w
-            .addSchedule(.render, schedules.startup)
-            .addSchedule(.render, schedules.update)
+            .addSchedule(.render, schedules.init)
+            .addSchedule(.render, schedules.prepare)
             .addSchedule(.render, schedules.process_render)
             .addSchedule(.render, schedules.deinit)
             .addResource(RenderScheduleOrder, .{})
             .addResource(RenderQueue, .init(w.alloc, {}))
             .configureSet(
                 .render,
-                schedules.update,
+                schedules.prepare,
                 UiRenderSet,
                 .{ .after = &.{RenderSet} },
             )
             .addSystem(.render, Scheduler.entry, render)
             .addSystem(.render, schedules.process_render, processRender);
+
+        _ = w
+            .addSchedule(.render, schedules.begin_cam)
+            .addSchedule(.render, schedules.end_cam)
+            .addSchedule(.render, schedules.ui_prepare)
+            .addSchedule(.render, schedules.ui_process_render);
     }
 };
